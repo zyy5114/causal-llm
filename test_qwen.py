@@ -24,19 +24,26 @@ model = AutoModelForCausalLM.from_pretrained(
 
 print("Model loaded!")
 
-# 测试问题（类似GSM8K）
-prompt = """Solve the following math problem step by step.
+# 使用 Chat Template 进行推理
+messages = [
+    {"role": "system", "content": "You are a helpful assistant. Solve math problems step by step."},
+    {"role": "user", "content": "Solve the following math problem step by step.\n\nQuestion: If there are 5 cars and each car has 4 wheels, how many wheels are there in total?"}
+]
 
-Question: If there are 5 cars and each car has 4 wheels, how many wheels are there in total?
-Answer:"""
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True
+)
 
-inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+inputs = tokenizer([text], return_tensors="pt").to("cuda")
 
 print("Generating answer...")
 output = model.generate(
     **inputs,
-    max_new_tokens=200,
-    do_sample=False
+    max_new_tokens=2048,
+    do_sample=False,
+    temperature=0
 )
 
 result = tokenizer.decode(output[0], skip_special_tokens=True)
