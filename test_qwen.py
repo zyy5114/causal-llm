@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
 
 model_name = "Qwen/Qwen2.5-7B-Instruct"
@@ -10,10 +10,15 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 
 print("Loading model...")
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16
+)
+
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    device_map="auto",   # 关键：省显存
-    torch_dtype=torch.float16,
+    device_map="auto",
+    quantization_config=quantization_config,
     trust_remote_code=True
 )
 
