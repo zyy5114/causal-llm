@@ -12,8 +12,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 print("Loading model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    device_map="auto",  
-    load_in_4bit=True, # 关键：省显存
+    device_map="auto",   # 关键：省显存
     torch_dtype=torch.float16,
     trust_remote_code=True
 )
