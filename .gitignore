@@ -1,0 +1,16 @@
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Training checkpoints (large, can be recreated)
+models/checkpoints/
+
+# Trained models (large files)
+models/
+
+# Cache files
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.venv/
