@@ -64,10 +64,10 @@
 │   │   ├── eval.py         # 训练评估脚本
 │   │   ├── convert_data.py                  # 数据格式转换脚本
 │   │   ├── train_data.json                  # 格式转换后训练数据集
-│   │   └── causal_math_refined.jsonl        # 原始数据集
+│   │   └── train_data_325_original.jsonl        # 原始数据集
 ├── scripts/
-│   ├── test_data_baseline.py    # 基础准确率评估
-│   └── recalc_acc.py            # 精准数值解析器
+│   ├── train_data_baseline.py              # 基础准确率评估
+│   └── train_data_recalc_acc.py            # 精准数值解析器
 └── models/                  # LoRA 权重及 Checkpoints (未放进来)
 ```
 
