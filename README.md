@@ -19,7 +19,7 @@
 ### 2. 因果增强变体生成 (Causal Variant Generation)
 为了训练模型识别“虚假相关性”，我针对每一道数学题生成了 **S-I-C-R-M** 五种因果推理变体。
 
-模型使用： **claude-sonnet-4-6 (via claude code)** 。
+模型使用： **claude-3-7-sonnet-20250219 (via claude code)** 。
 
 这 5 个维度构成了本项目推理能力的基石：
 
@@ -59,29 +59,42 @@
 ```bash
 .
 ├── data/
-│   ├── causal_finetune/    # 第一阶段训练数据及微调脚本 (325 samples)
-│   │   ├── train.py        # LoRA 微调脚本
-│   │   ├── eval.py         # 训练评估脚本
-│   │   ├── convert_data.py                  # 数据格式转换脚本
-│   │   ├── train_data.json                  # 格式转换后训练数据集
-│   │   └── train_data_325_original.jsonl        # 原始数据集
+│   ├── causal_finetune/                    # 训练数据与微调脚本
+│   │   ├── train.py                        # LoRA 微调脚本（v3 使用 train_data_v1.json）
+│   │   ├── eval.py                         # 训练评估脚本
+│   │   ├── convert_data.py                 # 数据格式转换（生成短结构目标）
+│   │   ├── train_data_325_original.jsonl   # 325 条原始训练样本
+│   │   ├── train_data_v1.json              # v3 训练数据
+│   │   └── train_data.json                 # 兼容旧流程的镜像文件
+│   └── test_data_200_original.jsonl        # 200 条测试集
 ├── scripts/
-│   ├── train_data_baseline.py              # 基础准确率评估
-│   └── train_data_recalc_acc.py            # 精准数值解析器
-└── models/                  # LoRA 权重及 Checkpoints (未放进来)
+│   ├── reproduce_v2.sh                     # 一键复现脚本
+│   ├── run_ablation_v2.py                  # 四组消融评测
+│   ├── test_acc_lora.py                    # LoRA 模型评估
+│   ├── test_acc_original.py                # Base 模型评估
+│   └── summarize_eval_jsonl.py             # 评测结果汇总
+└── models/                                 # LoRA 权重及 checkpoints（不入库）
 ```
 
 ## 🚀 快速开始
 
 ### 1. 环境准备
 ```bash
-pip install transformers peft datasets bitsandbytes accelerate
+pip install transformers peft datasets bitsandbytes accelerate trl
 ```
 
-### 2. 模型推理与评估
+### 2. 一键复现（推荐）
 ```bash
-python scripts/test_baseline.py
-# 运行后可查看 eval_results_log.json 中的详细输出分析
+source /etc/network_turbo
+export HF_ENDPOINT=https://hf-mirror.com
+source /root/miniconda3/bin/activate causal_llm
+cd /root/causal-llm
+bash scripts/reproduce_v2.sh
+```
+
+### 3. 单独运行消融评测
+```bash
+python scripts/run_ablation_v2.py --output-dir data/ablation_v2
 ```
 
 ---
@@ -89,21 +102,21 @@ python scripts/test_baseline.py
 ## 📅 路线图 (Roadmap)
 - [x] **Phase 1**: 环境搭建与基线微调 (完成度 100%)
 - [x] **Phase 1**: 基线误差分析与数据脱敏重算 (完成度 100%)
-- [ ] **Phase 2**: **反事实样本自动生成 (3.28-3.29)** —— 利用 Claude 3.5/3.7 生成 200+ 鲁棒性测试样本。
-- [ ] **Phase 3**: 混合微调与消融实验 (3.30-4.2) —— 引入原始数据平衡，解决“因果过度对齐”问题。
+- [x] **Phase 2**: 反事实样本构建 + 复现链路打通 + 消融实验 (完成)
+- [ ] **Phase 3**: 在保证公平对照的前提下，继续提升 LoRA 稳定超越基线的能力（数据配比 / 训练目标 / 超参）
 
 ---
 
-## Phase 2 Update (2026-04-05)
+## 📌 Phase 2 进展更新（2026-04-05）
 
-On top of Phase 1, we added **v3-short-target** training:
-- Switch target format from long free-form explanation to short structured output.
-- Keep output structure as: key variables + equations + final answer.
-- Lock training data to `data/causal_finetune/train_data_v1.json`.
+在 Phase 1 基础上，本项目新增了 **v3-short-target** 训练策略：
+- 将训练目标从“长解释”改为“短结构输出”；
+- 输出结构固定为：关键变量 + 方程 + Final Answer；
+- 训练数据固定为 `data/causal_finetune/train_data_v1.json`。
 
-### Latest Main Result (v3-short-target)
+### ✅ 最新主结果（v3-short-target）
 
-| Metric | v3-short-target (LoRA) |
+| 指标 | v3-short-target (LoRA) |
 | :--- | :--- |
 | **OVERALL** | **77.00% (154/200)** |
 | **S** | 87.50% (35/40) |
@@ -112,9 +125,9 @@ On top of Phase 1, we added **v3-short-target** training:
 | **R** | 80.00% (32/40) |
 | **M** | 65.00% (26/40) |
 
-### Ablation Comparison (same 200-sample test set)
+### 🧪 消融对比（同一 200 条测试集）
 
-| config | overall | S | I | C | R | M |
+| 配置 | 总体 | S | I | C | R | M |
 |---|---:|---:|---:|---:|---:|---:|
 | base_final_prompt | 77.00% (154/200) | 85.00% | 77.50% | 75.00% | 82.50% | 65.00% |
 | lora_v1_final_prompt | 53.00% (106/200) | 57.50% | 57.50% | 52.50% | 52.50% | 45.00% |
@@ -122,7 +135,7 @@ On top of Phase 1, we added **v3-short-target** training:
 | lora_v2_no_final_prompt | 73.00% (146/200) | 82.50% | 80.00% | 70.00% | 80.00% | 52.50% |
 | lora_v3_short_target_final_prompt | 77.00% (154/200) | 87.50% | 77.50% | 75.00% | 80.00% | 65.00% |
 
-### Reproduce (server)
+### 🔁 复现方式（服务器）
 
 ```bash
 ssh -p 24936 root@connect.nmb2.seetacloud.com
@@ -131,18 +144,18 @@ export HF_ENDPOINT=https://hf-mirror.com
 source /root/miniconda3/bin/activate causal_llm
 cd /root/causal-llm
 
-# all-in-one reproduce (convert + train + eval + optional ablation)
+# 一键复现（数据转换 + 训练 + 评估 + 可选消融）
 bash scripts/reproduce_v2.sh
 
-# ablation only
+# 仅运行消融
 python scripts/run_ablation_v2.py --output-dir data/ablation_v2
 ```
 
-More details: `REPRODUCE_V2.md`.
+更多复现说明见：`REPRODUCE_V2.md`。
 
-### Key Resources Added in Phase 2
+### 📁 Phase 2 关键资源
 
-Core scripts:
+核心脚本：
 - `scripts/reproduce_v2.sh`
 - `scripts/run_ablation_v2.py`
 - `scripts/test_acc_lora.py`
@@ -151,10 +164,9 @@ Core scripts:
 - `data/causal_finetune/convert_data.py`
 - `data/causal_finetune/train.py`
 
-Core datasets:
+核心数据：
 - `data/causal_finetune/train_data_325_original.jsonl`
 - `data/causal_finetune/train_data_v1.json`
 - `data/test_data_200_original.jsonl`
 
-> Note: model weights and checkpoints are intentionally excluded from this repository.
-
+> 说明：模型权重与 checkpoints 体积较大，仓库中不提交。
