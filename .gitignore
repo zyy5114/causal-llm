@@ -14,3 +14,12 @@ __pycache__/
 # Environment
 .env
 .venv/
+
+# Generated evaluation artifacts
+scripts/eval_results_log.json
+data/repro_v2/
+data/releases/
+data/ablation_v2*/
+data/test_results_*.jsonl
+data/failure_analysis.txt
+

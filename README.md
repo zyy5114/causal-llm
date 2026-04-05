@@ -91,3 +91,70 @@ python scripts/test_baseline.py
 - [x] **Phase 1**: 基线误差分析与数据脱敏重算 (完成度 100%)
 - [ ] **Phase 2**: **反事实样本自动生成 (3.28-3.29)** —— 利用 Claude 3.5/3.7 生成 200+ 鲁棒性测试样本。
 - [ ] **Phase 3**: 混合微调与消融实验 (3.30-4.2) —— 引入原始数据平衡，解决“因果过度对齐”问题。
+
+---
+
+## Phase 2 Update (2026-04-05)
+
+On top of Phase 1, we added **v3-short-target** training:
+- Switch target format from long free-form explanation to short structured output.
+- Keep output structure as: key variables + equations + final answer.
+- Lock training data to `data/causal_finetune/train_data_v1.json`.
+
+### Latest Main Result (v3-short-target)
+
+| Metric | v3-short-target (LoRA) |
+| :--- | :--- |
+| **OVERALL** | **77.00% (154/200)** |
+| **S** | 87.50% (35/40) |
+| **I** | 77.50% (31/40) |
+| **C** | 75.00% (30/40) |
+| **R** | 80.00% (32/40) |
+| **M** | 65.00% (26/40) |
+
+### Ablation Comparison (same 200-sample test set)
+
+| config | overall | S | I | C | R | M |
+|---|---:|---:|---:|---:|---:|---:|
+| base_final_prompt | 77.00% (154/200) | 85.00% | 77.50% | 75.00% | 82.50% | 65.00% |
+| lora_v1_final_prompt | 53.00% (106/200) | 57.50% | 57.50% | 52.50% | 52.50% | 45.00% |
+| lora_v2_final_prompt | 76.00% (152/200) | 85.00% | 77.50% | 70.00% | 82.50% | 65.00% |
+| lora_v2_no_final_prompt | 73.00% (146/200) | 82.50% | 80.00% | 70.00% | 80.00% | 52.50% |
+| lora_v3_short_target_final_prompt | 77.00% (154/200) | 87.50% | 77.50% | 75.00% | 80.00% | 65.00% |
+
+### Reproduce (server)
+
+```bash
+ssh -p 24936 root@connect.nmb2.seetacloud.com
+source /etc/network_turbo
+export HF_ENDPOINT=https://hf-mirror.com
+source /root/miniconda3/bin/activate causal_llm
+cd /root/causal-llm
+
+# all-in-one reproduce (convert + train + eval + optional ablation)
+bash scripts/reproduce_v2.sh
+
+# ablation only
+python scripts/run_ablation_v2.py --output-dir data/ablation_v2
+```
+
+More details: `REPRODUCE_V2.md`.
+
+### Key Resources Added in Phase 2
+
+Core scripts:
+- `scripts/reproduce_v2.sh`
+- `scripts/run_ablation_v2.py`
+- `scripts/test_acc_lora.py`
+- `scripts/test_acc_original.py`
+- `scripts/summarize_eval_jsonl.py`
+- `data/causal_finetune/convert_data.py`
+- `data/causal_finetune/train.py`
+
+Core datasets:
+- `data/causal_finetune/train_data_325_original.jsonl`
+- `data/causal_finetune/train_data_v1.json`
+- `data/test_data_200_original.jsonl`
+
+> Note: model weights and checkpoints are intentionally excluded from this repository.
+
